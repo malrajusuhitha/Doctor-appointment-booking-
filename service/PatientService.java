@@ -9,7 +9,6 @@ import com.geekster.DoctorsAppointmentApplication.model.AuthenticationToken;
 import com.geekster.DoctorsAppointmentApplication.model.Doctor;
 import com.geekster.DoctorsAppointmentApplication.model.Patient;
 import com.geekster.DoctorsAppointmentApplication.repository.IPatientRepo;
-import jakarta.xml.bind.DatatypeConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +30,8 @@ public class PatientService {
 
     @Autowired
     AppointmentService appointmentService;
+    
     public SignUpOutput signUp(SignUpInput signUpDto) {
-
         //check if user exists or not based on email
         Patient patient = patientRepo.findFirstByPatientEmail(signUpDto.getUserEmail());
 
@@ -56,18 +55,21 @@ public class PatientService {
         patientRepo.save(patient);
 
         return new SignUpOutput("Patient registered","Patient created successfully");
-
     }
 
     private String encryptPassword(String userPassword) throws NoSuchAlgorithmException {
         MessageDigest md5 = MessageDigest.getInstance("MD5");
-
         md5.update(userPassword.getBytes());
         byte[] digested = md5.digest();
-        String hash = DatatypeConverter.printHexBinary(digested);
+        return bytesToHex(digested);
+    }
 
-        return hash;
-
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString().toUpperCase();
     }
 
     public SignInOutput signIn(SignInInput signInDto) {
@@ -86,11 +88,9 @@ public class PatientService {
         }
         catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-
         }
 
         //match it with database encrypted password
-
         boolean isPasswordValid = encryptedPassword.equals(patient.getPatientPassword());
 
         if(!isPasswordValid)
@@ -99,21 +99,17 @@ public class PatientService {
         }
 
         AuthenticationToken token = new AuthenticationToken(patient);
-
         tokenService.saveToken(token);
 
         //set up output response
-
         return new SignInOutput("Authentication Successful !!!", token.getToken());
-
     }
 
     public List<Doctor> getAllDoctors() {
-
         return doctorService.getAllDoctors();
+    }
 
+    public void cancelAppointment(Long appointmentId) {
+        appointmentService.cancelAppointment(appointmentId);
     }
-public void cancelAppointment(Long appointmentId) {
-    appointmentService.cancelAppointment(appointmentId);
 }
-    }
